@@ -75,6 +75,7 @@ export interface VariableQuery {
   item?: string;
   macro?: string;
   showDisabledItems?: boolean;
+  hostTag?: string;
 }
 
 export type LegacyVariableQuery = VariableQuery | string;

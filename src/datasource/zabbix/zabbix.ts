@@ -9,6 +9,7 @@ import responseHandler, { handleMultiSLIResponse, handleServiceResponse, handleS
 import { ProblemDTO, ZBXApp, ZBXHost, ZBXItem, ZBXItemTag, ZBXTrigger } from '../types';
 import { ZabbixDSOptions } from '../types/config';
 import { HostTagFilter, ZabbixMetricsQuery, ZabbixTagEvalType } from '../types/query';
+import { HostTagOperatorValue } from '../components/QueryEditor/types';
 import * as utils from '../utils';
 import { InfluxDBConnector } from './connectors/influxdb/influxdbConnector';
 import { SQLConnector } from './connectors/sql/sqlConnector';
@@ -324,8 +325,40 @@ export class Zabbix implements ZabbixConnector {
     });
   }
 
-  getHosts(groupFilter?, hostFilter?): Promise<any[]> {
-    return this.getAllHosts(groupFilter).then((hosts) => findByFilter(hosts, hostFilter));
+  async getHosts(groupFilter?, hostFilter?, hostTag?): Promise<any[]> {
+    const tagFilter = (hostTag || '').trim();
+
+    // No host-tag filter (empty or "match all") -> original behaviour.
+    if (tagFilter === '' || tagFilter === '/.*/' || tagFilter.includes('$__all')) {
+      return this.getAllHosts(groupFilter).then((hosts) => findByFilter(hosts, hostFilter));
+    }
+
+    // Parse "tagName: value" (Equals) or "tagName" (Exists). The value is already
+    // template-expanded by the caller; support multi-value ("{a,b}" / "a,b").
+    const sep = tagFilter.indexOf(':');
+    const tag = (sep >= 0 ? tagFilter.slice(0, sep) : tagFilter).trim();
+    const rawValue = sep >= 0 ? tagFilter.slice(sep + 1).trim() : '';
+    const values = rawValue
+      .replace(/^\{|\}$/g, '')
+      .split(',')
+      .map((v) => v.trim())
+      .filter((v) => v !== '');
+
+    let hostTagFilters: HostTagFilter[];
+    let evalType = ZabbixTagEvalType.AndOr;
+    if (sep < 0 || values.length === 0) {
+      // tag name only -> Exists
+      hostTagFilters = [{ tag, value: '', operator: HostTagOperatorValue.Exists }];
+    } else if (values.length === 1) {
+      hostTagFilters = [{ tag, value: values[0], operator: HostTagOperatorValue.Equals }];
+    } else {
+      // multi-value -> OR of Equals
+      evalType = ZabbixTagEvalType.Or;
+      hostTagFilters = values.map((value) => ({ tag, value, operator: HostTagOperatorValue.Equals }));
+    }
+
+    const hosts = await this.getAllHosts(groupFilter, true, hostTagFilters, evalType);
+    return findByFilter(hosts, hostFilter);
   }
 
   /**

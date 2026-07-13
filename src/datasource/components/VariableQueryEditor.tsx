@@ -21,6 +21,7 @@ export class ZabbixVariableQueryEditor extends PureComponent<VariableQueryProps,
     host: '',
     application: '',
     itemTag: '',
+    hostTag: '',
     item: '',
     showDisabledItems: false,
   };
@@ -69,8 +70,8 @@ export class ZabbixVariableQueryEditor extends PureComponent<VariableQueryProps,
   };
 
   handleQueryChange = () => {
-    const { queryType, group, host, application, itemTag, item, showDisabledItems } = this.state;
-    const queryModel = { queryType, group, host, application, itemTag, item, showDisabledItems };
+    const { queryType, group, host, application, itemTag, item, hostTag, showDisabledItems } = this.state;
+    const queryModel = { queryType, group, host, application, itemTag, item, hostTag, showDisabledItems };
     this.props.onChange(queryModel, `Zabbix - ${queryType}`);
   };
 
@@ -81,9 +82,9 @@ export class ZabbixVariableQueryEditor extends PureComponent<VariableQueryProps,
       queryType: selectedItem.value,
     });
 
-    const { group, host, application, itemTag, item, showDisabledItems } = this.state;
+    const { group, host, application, itemTag, item, hostTag, showDisabledItems } = this.state;
     const queryType = selectedItem.value;
-    const queryModel = { queryType, group, host, application, itemTag, item, showDisabledItems };
+    const queryModel = { queryType, group, host, application, itemTag, item, hostTag, showDisabledItems };
     this.props.onChange(queryModel, `Zabbix - ${queryType}`);
   };
 
@@ -96,13 +97,13 @@ export class ZabbixVariableQueryEditor extends PureComponent<VariableQueryProps,
       };
     });
 
-    const { queryType, group, host, application, itemTag, item } = this.state;
-    const queryModel = { queryType, group, host, application, itemTag, item, showDisabledItems };
+    const { queryType, group, host, application, itemTag, item, hostTag } = this.state;
+    const queryModel = { queryType, group, host, application, itemTag, item, hostTag, showDisabledItems };
     this.props.onChange(queryModel, `Zabbix - ${queryType}`);
   };
 
   render() {
-    const { selectedQueryType, legacyQuery, group, host, application, itemTag, item, showDisabledItems } = this.state;
+    const { selectedQueryType, legacyQuery, group, host, application, itemTag, item, hostTag, showDisabledItems } = this.state;
     const { datasource } = this.props;
     const supportsItemTags = datasource?.zabbix?.isZabbix54OrHigherSync() || false;
 
@@ -137,6 +138,23 @@ export class ZabbixVariableQueryEditor extends PureComponent<VariableQueryProps,
                 width={30}
                 value={host}
                 onChange={(evt) => this.handleQueryUpdate(evt, 'host')}
+                onBlur={this.handleQueryChange}
+              />
+            </InlineField>
+          </InlineFieldRow>
+        )}
+
+        {selectedQueryType.value === VariableQueryTypes.Host && (
+          <InlineFieldRow>
+            <InlineField
+              label="Host tag"
+              labelWidth={18}
+              tooltip="Filter hosts by host tag. Format: 'tagName: value' (Equals) or 'tagName' (Exists). Supports template variables, e.g. 'cmdb_key: $cmdb_key'."
+            >
+              <ZabbixInput
+                width={30}
+                value={hostTag}
+                onChange={(evt) => this.handleQueryUpdate(evt, 'hostTag')}
                 onBlur={this.handleQueryChange}
               />
             </InlineField>

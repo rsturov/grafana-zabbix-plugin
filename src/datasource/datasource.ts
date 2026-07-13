@@ -724,7 +724,7 @@ export class ZabbixDatasource extends DataSourceWithBackend<ZabbixMetricsQuery, 
       queryModel = utils.parseLegacyVariableQuery(query);
     }
 
-    for (const prop of ['group', 'host', 'application', 'itemTag', 'item']) {
+    for (const prop of ['group', 'host', 'application', 'itemTag', 'item', 'hostTag']) {
       queryModel[prop] = utils.replaceTemplateVars(this.templateSrv, queryModel[prop], {});
     }
 
@@ -736,7 +736,7 @@ export class ZabbixDatasource extends DataSourceWithBackend<ZabbixMetricsQuery, 
         resultPromise = this.zabbix.getGroups(queryModel.group);
         break;
       case VariableQueryTypes.Host:
-        resultPromise = this.zabbix.getHosts(queryModel.group, queryModel.host);
+        resultPromise = this.zabbix.getHosts(queryModel.group, queryModel.host, queryModel.hostTag);
         break;
       case VariableQueryTypes.Application:
         resultPromise = this.zabbix.getApps(queryModel.group, queryModel.host, queryModel.application);
